@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Скажи это от себя · Я-сообщения</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sand:#EAE2D8;
+    --card:#F9F5F0;
+    --ink:#1D1613;
+    --ink-soft:#7A6E63;
+    --brown:#987158;
+    --brown-dark:#7C5A44;
+    --blush:#E9DCCF;
+    --line:#D6C9BB;
+    --deep:#241C17;
+    --deep-text:#EFE7DD;
+    --deep-muted:#C7B5A4;
+    --serif:'Lora', Georgia, serif;
+    --sans:'Golos Text', -apple-system, sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:var(--sand);}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:28px 20px 56px;}
+  .eyebrow{
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-soft);font-weight:500;margin-bottom:14px;
+  }
+  h1{
+    font-family:var(--serif);font-weight:500;
+    font-size:clamp(28px,6vw,36px);line-height:1.2;margin-bottom:16px;
+  }
+  h2{
+    font-family:var(--serif);font-weight:500;font-size:21px;
+    margin:38px 0 8px;
+  }
+  .lead{font-size:16px;margin-bottom:12px;}
+  .note{font-size:14px;color:var(--ink-soft);margin-bottom:18px;}
+
+  /* карточки до/после */
+  .flip{
+    width:100%;
+    text-align:left;
+    background:none;border:none;cursor:pointer;
+    perspective:900px;
+    margin-bottom:12px;
+    font-family:var(--sans);
+  }
+  .flip-inner{
+    position:relative;
+    transition:transform .5s ease;
+    transform-style:preserve-3d;
+  }
+  .flip.turned .flip-inner{transform:rotateY(180deg);}
+  .face{
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    border-radius:12px;
+    padding:16px;
+    min-height:100%;
+  }
+  .face.front{
+    background:var(--card);
+    border:1px solid var(--line);
+  }
+  .face.back{
+    position:absolute;inset:0;
+    transform:rotateY(180deg);
+    background:var(--deep);
+    color:var(--deep-text);
+    display:flex;flex-direction:column;justify-content:center;
+  }
+  .flip:focus-visible{outline:3px solid var(--brown);outline-offset:2px;}
+  .phrase-you{
+    font-family:var(--serif);font-style:italic;
+    font-size:17px;line-height:1.45;margin-bottom:8px;
+  }
+  .tap-hint{font-size:12px;color:var(--ink-soft);letter-spacing:.06em;text-transform:uppercase;}
+  .phrase-i{
+    font-family:var(--serif);font-style:italic;
+    font-size:16px;line-height:1.5;margin-bottom:8px;
+  }
+  .shift{font-size:12px;color:var(--deep-muted);letter-spacing:.06em;text-transform:uppercase;}
+  @media (prefers-reduced-motion: reduce){
+    .flip-inner{transition:none;}
+  }
+
+  /* конструктор */
+  .builder{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 18px;
+    margin-top:14px;
+  }
+  .field{margin-bottom:20px;}
+  .field-label{
+    font-family:var(--serif);font-style:italic;
+    font-size:17px;margin-bottom:8px;
+  }
+  .field input[type=text]{
+    width:100%;
+    font-family:var(--sans);font-size:15px;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;
+  }
+  .field input[type=text]:focus{outline:2px solid var(--brown);border-color:var(--brown);}
+  .hint{font-size:13px;color:var(--ink-soft);margin-top:6px;}
+  .warn{
+    display:none;
+    font-size:13px;color:var(--brown-dark);
+    background:var(--blush);
+    border-radius:8px;
+    padding:8px 12px;
+    margin-top:8px;
+  }
+  .warn.show{display:block;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    font-family:var(--sans);font-size:14px;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:999px;
+    padding:8px 14px;cursor:pointer;
+    transition:background .15s ease,border-color .15s ease;
+  }
+  .chip:hover{border-color:var(--brown);}
+  .chip:focus-visible{outline:3px solid var(--brown);outline-offset:2px;}
+  .chip.on{background:var(--blush);border-color:var(--brown);font-weight:500;}
+  .custom-input{margin-top:10px;display:none;}
+  .custom-input.show{display:block;}
+
+  .result{
+    display:none;
+    margin-top:6px;
+  }
+  .result.show{display:block;}
+  .result-card{
+    background:var(--deep);
+    color:var(--deep-text);
+    border-radius:14px;
+    padding:20px 18px;
+  }
+  .result-label{
+    font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--deep-muted);margin-bottom:10px;font-weight:500;
+  }
+  .result-text{
+    font-family:var(--serif);font-style:italic;
+    font-size:18px;line-height:1.55;
+  }
+  .copy{
+    margin-top:14px;
+    font-family:var(--sans);font-size:14px;font-weight:600;
+    color:var(--deep);background:var(--sand);
+    border:none;border-radius:9px;padding:11px 18px;cursor:pointer;
+  }
+  .copy:hover{background:#F5EEE5;}
+  .copy:focus-visible{outline:3px solid var(--deep-muted);outline-offset:2px;}
+
+  /* оговорка и группа */
+  .honest p{font-size:15px;margin-bottom:14px;}
+  .group-card{
+    background:var(--deep);color:var(--deep-text);
+    border-radius:16px;padding:26px 22px;margin:26px 0 0;
+  }
+  .group-card .eyebrow{color:var(--deep-muted);margin-bottom:10px;}
+  .group-card h2{
+    font-family:var(--serif);font-weight:500;font-size:26px;
+    margin:0 0 12px;
+  }
+  .group-card p{font-size:15px;line-height:1.55;margin-bottom:12px;color:var(--deep-text);}
+  .group-card .facts{font-size:14px;color:var(--deep-muted);margin-bottom:20px;}
+  .group-how{
+    font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--deep-muted);font-weight:500;margin:18px 0 10px;
+  }
+  .group-list{list-style:none;margin:0 0 16px;}
+  .group-list li{
+    font-size:15px;line-height:1.5;color:var(--deep-text);
+    padding:0 0 10px 18px;position:relative;
+  }
+  .group-list li::before{
+    content:"";position:absolute;left:0;top:9px;
+    width:6px;height:6px;border-radius:50%;background:var(--deep-muted);
+  }
+  .group-list li:last-child{padding-bottom:0;}
+  .btn{
+    display:inline-block;
+    font-family:var(--sans);font-size:16px;font-weight:600;
+    color:var(--deep);background:var(--sand);
+    border:none;border-radius:10px;padding:15px 26px;
+    cursor:pointer;text-decoration:none;
+    width:100%;text-align:center;
+    transition:background .15s ease;
+  }
+  .btn:hover{background:#F5EEE5;}
+  .btn:focus-visible{outline:3px solid var(--deep-muted);outline-offset:3px;}
+  .fineprint{font-size:13px;color:var(--deep-muted);margin-top:12px;margin-bottom:0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Мини-практика · Я-сообщения</div>
+  <h1>Скажи это от себя</h1>
+  <p class="lead">Есть фразы, после которых разговор превращается в оборону. «Ты опять…», «Тебе всё равно…», «Вечно ты…». Формально это про другого, а на самом деле в них спрятаны мои чувства, которым не досталось слов.</p>
+  <p class="note">Я-сообщение возвращает эти слова: не «ты плохой», а «мне больно, и вот что мне нужно». Ниже можно посмотреть, как переворачиваются знакомые фразы, и собрать свою.</p>
+
+  <h2>До и после</h2>
+  <p class="note">Нажмите на фразу, чтобы перевернуть её.</p>
+
+  <div id="cards"></div>
+
+  <h2>Соберите свою фразу</h2>
+  <p class="note">Возьмите разговор, который давно не получается, и попробуйте сказать то же самое от себя.</p>
+
+  <div class="builder">
+    <div class="field">
+      <div class="field-label">Когда ты…</div>
+      <input type="text" id="fact" placeholder="приходишь позже, чем мы договорились" autocomplete="off">
+      <div class="hint">Только факт, как его увидела бы камера. Без оценок и обобщений.</div>
+      <div class="warn" id="factWarn"></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">…я чувствую…</div>
+      <div class="chips" id="feelChips"></div>
+      <div class="custom-input" id="feelCustomWrap">
+        <input type="text" id="feelCustom" placeholder="одно слово про меня" autocomplete="off">
+      </div>
+      <div class="hint">Чувство — одно слово про меня: злюсь, обидно, страшно. «Я чувствую, что ты не прав» — это мысль, а не чувство.</div>
+      <div class="warn" id="feelWarn"></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">…потому что мне важно…</div>
+      <div class="chips" id="needChips"></div>
+      <div class="custom-input" id="needCustomWrap">
+        <input type="text" id="needCustom" placeholder="что для меня стоит за этим чувством" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Я прошу тебя… <span style="font-style:normal;font-size:13px;color:var(--ink-soft);">(необязательно)</span></div>
+      <input type="text" id="ask" placeholder="предупреждать, если задерживаешься" autocomplete="off">
+      <div class="hint">Просьба — это о конкретном действии. Просьба «изменись» не считается.</div>
+      <div class="warn" id="askWarn"></div>
+    </div>
+  </div>
+
+  <div class="result" id="result">
+    <div class="result-card">
+      <div class="result-label">Ваша фраза</div>
+      <div class="result-text" id="resultText"></div>
+      <button class="copy" id="copyBtn" onclick="copyPhrase()">Скопировать фразу</button>
+    </div>
+  </div>
+
+  <h2>Честная оговорка</h2>
+  <div class="honest">
+    <p>Я-сообщение — это техника, и фраза — только начало разговора, а не его решение. Она открывает дверь, но входить в неё всё равно двоим.</p>
+    <p>И если вы замечаете, что правильные слова давно знаете, а в живом разговоре всё равно вылетает привычное «ты опять», дело не в словах и не в силе воли. Привычный способ говорить сложился рядом с людьми, и меняется он тоже рядом с людьми, там, где кто-то настоящий отвечает вам, а вы ему.</p>
+    <p>Для такой работы мы с ко-терапевтом собрали группу.</p>
+  </div>
+
+  <div class="group-card">
+    <div class="eyebrow">Терапевтическая группа онлайн, в гештальт-подходе</div>
+    <h2>«Между нами»</h2>
+    <p>Группа о том, как я строю контакт: приближаюсь, отдаляюсь, защищаюсь, прошу, злюсь, молчу и завершаю отношения.</p>
+    <div class="group-how">Как это устроено</div>
+    <ul class="group-list">
+      <li>12 еженедельных встреч по 3 часа, онлайн</li>
+      <li>около 8 участников и два ведущих терапевта</li>
+      <li>на каждой встрече: живой разговор в кругу, индивидуальная работа с терапевтом, упражнения и немного теории, которая объясняет уже прожитое</li>
+      <li>перед стартом вводное интервью на 30–40 минут: познакомимся и вместе решим, подходит ли вам этот формат сейчас</li>
+    </ul>
+    <p>Я-сообщения — язык самой первой встречи. Дальше группа идёт глубже: к тому, почему честные слова даются так трудно.</p>
+    <p class="facts">Старт в конце сентября · 1500 ₽ за встречу</p>
+    <a class="btn" href="https://t.me/nataliya_mungalova" target="_blank" rel="noopener">Попасть в лист предзаписи</a>
+    <p class="fineprint">Предзапись ни к чему не обязывает: когда откроется набор, вы узнаете об этом раньше остальных, и у вас будет время спокойно решить.</p>
+  </div>
+
+</div>
+
+<script>
+/* ---------- карточки до/после ---------- */
+const CARDS = [
+  {
+    you: "«Ты опять опоздал!»",
+    me: "«Я злюсь, когда жду тебя дольше, чем мы договорились. Мне важно, чтобы моё время имело вес».",
+    shift: "обвинение → чувство и граница"
+  },
+  {
+    you: "«Тебе вообще всё равно на меня»",
+    me: "«Мне одиноко, когда я рассказываю о важном, а ты в телефоне. Мне нужно твоё внимание, хотя бы десять минут».",
+    shift: "приговор → чувство и просьба"
+  },
+  {
+    you: "«Ты никогда мне не помогаешь»",
+    me: "«Я устала и злюсь, что тяну дом одна. Забери, пожалуйста, завтра детей из сада».",
+    shift: "«никогда» → конкретная просьба"
+  },
+  {
+    you: "«С тобой невозможно разговаривать!»",
+    me: "«Я теряюсь, когда ты повышаешь голос. Давай вернёмся к разговору, когда оба остынем: он мне важен».",
+    shift: "атака → чувство и условие"
+  },
+  {
+    you: "«Вечно ты всё решаешь сам»",
+    me: "«Мне обидно узнавать о решениях последней. Мне важно участвовать в том, что касается нас обоих».",
+    shift: "упрёк → потребность"
+  },
+  {
+    you: "«Да что с тобой не так?!»",
+    me: "«Я не понимаю, что с тобой происходит, и тревожусь. Расскажи мне?»",
+    shift: "диагноз → тревога и интерес"
+  }
+];
+
+const cardsEl = document.getElementById("cards");
+cardsEl.innerHTML = CARDS.map((c,i)=>`
+  <button class="flip" id="flip${i}" onclick="this.classList.toggle('turned')" aria-label="Перевернуть фразу">
+    <div class="flip-inner">
+      <div class="face front">
+        <div class="phrase-you">${c.you}</div>
+        <div class="tap-hint">нажмите, чтобы перевернуть</div>
+      </div>
+      <div class="face back">
+        <div class="phrase-i">${c.me}</div>
+        <div class="shift">${c.shift}</div>
+      </div>
+    </div>
+  </button>`).join("");
+
+// выравниваем высоту двух сторон каждой карточки
+function sizeCards(){
+  document.querySelectorAll(".flip").forEach(f=>{
+    const inner = f.querySelector(".flip-inner");
+    const front = f.querySelector(".face.front");
+    const back = f.querySelector(".face.back");
+    inner.style.height = "auto";
+    back.style.position = "static";
+    back.style.transform = "none";
+    const h = Math.max(front.offsetHeight, back.offsetHeight);
+    back.style.position = "absolute";
+    back.style.transform = "rotateY(180deg)";
+    inner.style.height = h + "px";
+  });
+}
+window.addEventListener("load", sizeCards);
+window.addEventListener("resize", sizeCards);
+
+/* ---------- конструктор ---------- */
+const FEELINGS = ["злость","обиду","тревогу","усталость","одиночество","растерянность","грусть","бессилие","своё слово"];
+const NEEDS = [
+  "чувствовать, что меня слышат",
+  "чтобы моё время уважали",
+  "участвовать в решениях, которые нас касаются",
+  "понимать, что происходит",
+  "чувствовать твою поддержку",
+  "быть с тобой ближе",
+  "своими словами"
+];
+
+const BLAME_WORDS = ["опять","вечно","всегда","никогда","вообще","постоянно","как всегда","как обычно","ни разу","снова"];
+
+let feel = null, need = null;
+
+function makeChips(containerId, items, onPick){
+  const el = document.getElementById(containerId);
+  el.innerHTML = items.map((t,i)=>`<button class="chip" data-i="${i}">${t}</button>`).join("");
+  el.querySelectorAll(".chip").forEach(ch=>{
+    ch.addEventListener("click", ()=>{
+      el.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
+      ch.classList.add("on");
+      onPick(items[+ch.dataset.i]);
+    });
+  });
+}
+
+makeChips("feelChips", FEELINGS, v=>{
+  const wrap = document.getElementById("feelCustomWrap");
+  if(v === "своё слово"){ wrap.classList.add("show"); feel = document.getElementById("feelCustom").value.trim(); }
+  else { wrap.classList.remove("show"); feel = v; }
+  update();
+});
+makeChips("needChips", NEEDS, v=>{
+  const wrap = document.getElementById("needCustomWrap");
+  if(v === "своими словами"){ wrap.classList.add("show"); need = document.getElementById("needCustom").value.trim(); }
+  else { wrap.classList.remove("show"); need = v; }
+  update();
+});
+
+document.getElementById("feelCustom").addEventListener("input", e=>{ feel = e.target.value.trim(); update(); });
+document.getElementById("needCustom").addEventListener("input", e=>{ need = e.target.value.trim(); update(); });
+document.getElementById("fact").addEventListener("input", update);
+document.getElementById("ask").addEventListener("input", update);
+
+function findBlame(text){
+  const low = " " + text.toLowerCase() + " ";
+  return BLAME_WORDS.find(w => low.includes(w));
+}
+
+function checkFeeling(text){
+  const low = text.toLowerCase();
+  return low.startsWith("что ты") || low.includes("что ты ");
+}
+
+function update(){
+  const fact = document.getElementById("fact").value.trim();
+  const ask = document.getElementById("ask").value.trim();
+
+  // детектор обвинений в факте
+  const fw = document.getElementById("factWarn");
+  const blameF = findBlame(fact);
+  if(blameF){
+    fw.textContent = "Слово «" + blameF + "» превращает факт в обвинение. Попробуйте описать только этот раз.";
+    fw.classList.add("show");
+  } else fw.classList.remove("show");
+
+  // чувство, которое на самом деле мысль
+  const few = document.getElementById("feelWarn");
+  if(feel && checkFeeling(feel)){
+    few.textContent = "«Я чувствую, что ты…» — это мысль о другом. Чувство живёт короче: злюсь, обидно, страшно.";
+    few.classList.add("show");
+  } else few.classList.remove("show");
+
+  // обвинения в просьбе
+  const aw = document.getElementById("askWarn");
+  const blameA = findBlame(ask);
+  if(blameA){
+    aw.textContent = "«" + blameA.charAt(0).toUpperCase() + blameA.slice(1) + "» пробралось и сюда. Просьба работает, когда она про конкретное действие.";
+    aw.classList.add("show");
+  } else aw.classList.remove("show");
+
+  // сборка
+  const res = document.getElementById("result");
+  if(fact && feel && need){
+    let phrase = "Когда ты " + fact.replace(/\.+$/,"") + ", я чувствую " + feel + ", потому что мне важно " + need.replace(/\.+$/,"") + ".";
+    if(ask) phrase += " Я прошу тебя " + ask.replace(/\.+$/,"") + ".";
+    document.getElementById("resultText").textContent = phrase;
+    res.classList.add("show");
+  } else {
+    res.classList.remove("show");
+  }
+}
+
+function copyPhrase(){
+  const text = document.getElementById("resultText").textContent;
+  const btn = document.getElementById("copyBtn");
+  const done = ()=>{ btn.textContent = "Скопировано"; setTimeout(()=>{ btn.textContent = "Скопировать фразу"; }, 1600); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text, done));
+  } else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done){
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand("copy"); }catch(e){}
+  document.body.removeChild(ta);
+  done();
+}
+</script>
+</body>
+</html>
